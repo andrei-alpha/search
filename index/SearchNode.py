@@ -1,3 +1,4 @@
+import array
 
 class SearchNode:
 	instances = 0
@@ -6,7 +7,8 @@ class SearchNode:
 		SearchNode.instances += 1
 		self.count = 0
 		self.ends = 0
-		self.refs = set()
+		self.docs = array.array('i')
+		self.offsets = array.array('i')
 		self.next = {}
 
 	def getCount(self):

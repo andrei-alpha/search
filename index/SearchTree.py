@@ -1,4 +1,6 @@
+import sys
 import random
+from pympler.asizeof import asizeof
 
 from SearchNode import SearchNode
 
@@ -19,7 +21,8 @@ class SearchTree:
 		return self.__put(self.root, str, offset, docRef, 0)
 
 	def __put(self, node, str, offset, docRef, depth):
-		node.refs.add((docRef, offset))
+		node.docs.append(docRef)
+		node.offsets.append(offset)
 
 		if not str:
 			return
@@ -34,7 +37,7 @@ class SearchTree:
 		# we have to split
 		if node.ends > 10:
 			strs = map(lambda x: self.__docFromRef(x), node.refs)
-			for newStr, ref in zip(strs, node.refs):
+			for newStr, ref in zip(strs, zip(node.docs, node.offsets)):
 				if not newStr:
 					continue
 
@@ -58,10 +61,10 @@ class SearchTree:
 
 	def __get(self, node, prefix):
 		if not prefix:
-			docs = map(lambda (docRef, offset): (self.entries[docRef], offset), node.refs)
+			docs = map(lambda docRef: self.entries[docRef], node.docs)
 			self.resultCount = len(docs)
 			docs = docs if len(docs) < 15 else random.sample(docs, 15)
-			return map(lambda (doc, offset): self.__firstSplit(doc[offset:], 50) + "...", docs)
+			return map(lambda (doc, offset): self.__firstSplit(doc[offset:], 50) + "...", zip(docs, node.offsets))
 
 		if not prefix[0] in node.next:
 			return []
@@ -80,3 +83,16 @@ class SearchTree:
 
 	def resultsCount(self):
 		return self.resultCount
+
+	def examine(self):
+		return self.__examineAll(self.root)
+
+	def __examine(self, node):
+		res = [[0,0,0]]
+		res[0][0] = asizeof(node.docs) + asizeof(node.offsets)
+		res[0][1] = sys.getsizeof(node.next)
+		res[0][2] = asizeof(node.count) + asizeof(node.ends)
+		for val in node.next:
+			res.append( self.__examine(node.next[val]))
+		return reduce(lambda x,y: [x[0] + y[0], x[1] + y[1], x[2] + y[2]], res)
+

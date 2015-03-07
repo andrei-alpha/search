@@ -25,3 +25,7 @@ class SearchIndex:
 		latency = "{0:.2f}".format((time.time() - start) * 1000)
 		print 'About', self.tree.resultsCount(), 'results (' + latency, 'milisec)'
 		return result
+
+	def examine(self):
+		res = self.tree.examineAll()
+		print 'refs', res[0], 'next', res[1], 'counters', res[2]
