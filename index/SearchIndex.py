@@ -17,7 +17,7 @@ class SearchIndex:
 
 	def indexFile(self, path):
 		f = open(path)
-		self.index(f.read().replace('\n', ' '))
+		self.index(f.read())
 
 	def search(self, query):
 		start = time.time()

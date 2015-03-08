@@ -1,5 +1,6 @@
 import sys
 import random
+import re
 from pympler.asizeof import asizeof
 
 from SearchNode import SearchNode
@@ -52,30 +53,37 @@ class SearchTree:
 
 	def get(self, prefix):
 		self.resultCount = 0
-		results = self.__get(self.root, prefix)
-		if len(results) > 0:
-			results = map(lambda entry: prefix + entry, results)
-		else:
-			results = "not found"
+		results = self.__get(self.root, prefix, prefix)
+		if len(results) == 0:
+			results = ["not found"]
 		return results
 
-	def __get(self, node, prefix):
-		if not prefix:
+	def __get(self, node, pattern, prefix):
+		if not pattern:
 			docs = map(lambda docRef: self.entries[docRef], node.docs)
 			self.resultCount = len(docs)
 			docs = docs if len(docs) < 15 else random.sample(docs, 15)
-			return map(lambda (doc, offset): self.__firstSplit(doc[offset:], 50) + "...", zip(docs, node.offsets))
+			return map(lambda (doc, offset): self.__getContext(doc, offset, prefix), zip(docs, node.offsets))
 
-		if not prefix[0] in node.next:
+		if not pattern[0] in node.next:
 			return []
-		return self.__get(node.next[prefix[0]], prefix[1:])
+		return self.__get(node.next[pattern[0]], pattern[1:], prefix)
 
 	def __docFromRef(self, ref):
 		document = self.entries[ref[0]][ref[1]:]
 		return document
 
+	def __getContext(self, doc, offset, prefix):
+		before = self.__firstSplit(doc[:(offset-len(prefix))][::-1], 50)[::-1]
+		after  = self.__firstSplit(doc[offset:], 50)
+		return before + "*" + prefix + "*" + after
+
 	def __firstSplit(self, str, offset):
-		index = str[offset:].find(' ')
+		end = re.compile('\.|\?|\!')
+		space = re.compile('\s')
+		match = end.search(str[offset:])
+		match = match if match else space.search(str[offset:])
+		index = match.start() if match else 0
 		return str[:offset+index]
 
 	def nodesCount(self):
