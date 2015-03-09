@@ -39,6 +39,13 @@ html, body {
     margin: auto auto;
 }
 
+#resultsStats {
+    color: #808080;
+    margin-top: -25px;
+    margin-right: 50px;
+    float: right;
+}
+
 .input {
     width: 100%;
     margin: -0.0625em 0px 0px;
@@ -72,4 +79,11 @@ html, body {
     padding: 6px 50px;
     min-height: 1.2em !important;
     font: 16px arial,sans-serif;
+}
+
+.result-name {
+    margin-left: -42px;
+    padding-bottom: 2px;
+    font: 12px "Lucida Console", Monaco, monospace;
+    color: #282E2E;
 }

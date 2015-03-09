@@ -1,30 +1,48 @@
 $(function() {
 	$('#main').keyup(function(e) {
 		query($(this).val())
-    	$('#autocomplete').val($(this).val() + ' wise')
 	});
 })
 
 function query(input) {
 	if (input.length == 0) {
 		$('#results').html('')
+		$('#resultsStats').html('')
 		return;
 	}
 	$.ajax({
 	    url: "/backend/query",
         data: { "query": input, },
         type: "post",
-	      success: function(results){
-            $('#results').html(format(JSON.parse(results)))
+	      success: function(data){
+            processData(JSON.parse(data))
         },
     });
 }
 
-function format(results) {
-	html = '';
-	for (var i in results) {
-		results[i] = results[i].replace(/\*([a-zA-Z0-9]*[^\*]*)\*/g, "<b>$1</b>")
-		html += '<div class="result">' + results[i].replace(/\n/gi, "<br>") + '</div>'
+function processData(data) {
+	results = data["results"]
+	count = data["count"]
+	time = data["latency"]
+	if (data["suggestions"].length) {
+		suggestion = data["suggestions"][0][1].replace('_', ' ')
+		$('#autocomplete').val($('#main').val() + suggestion)
 	}
-	return html
+
+	$('#resultsStats').html('About ' + count + ' results (' + time + ' milliseconds)')
+	html = ''
+	for (var i in results) {
+		name = results[i][0]; text = results[i][1];
+		text = text.replace(/\*([a-zA-Z0-9]*[^\*]*)\*/g, '<font color="red">$1</font>')
+		html += formatResult(name, text.replace(/\n/gi, "<br>"))
+	}
+	$('#results').html(html)
+}
+
+function formatResult(name, text) {
+	html = '<div class="result">'
+	html += '<div class="result-name">' + name + '</div>'
+	html += '<div class="result-text">' + text + '</div>'
+	html += '</div>'
+	return html;
 }
