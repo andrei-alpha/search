@@ -5,17 +5,7 @@ import threading
 from bottle import Bottle, static_file, request, run
 from index import SearchIndex
 
-def indexFiles(path):
-	# Index all shakespeare operas
-	for file in os.listdir(path):
-		if not os.path.isdir(path + '/' + file):
-			search.indexFile(path + '/' + file, file.replace("_", " ").title())
-
 app = Bottle()
-search = SearchIndex()
-t = threading.Thread(target=indexFiles, args = ('shakespeare',))
-t.daemon = True
-t.start()
 
 @app.route('/')
 def index():
@@ -32,4 +22,17 @@ def query():
 def server_static(filename):
     return static_file(filename, root='static')
 
-run(app, reloader=True, host='localhost', port=8080, debug=True)
+def indexFiles(path):
+	# Index all shakespeare operas
+	for file in os.listdir(path):
+		if not os.path.isdir(path + '/' + file):
+			search.indexFile(path + '/' + file, file.replace("_", " ").title())
+			break
+
+if __name__ == "__main__":
+	search = SearchIndex()
+	t = threading.Thread(target=indexFiles, args = ('shakespeare',))
+	t.daemon = True
+	t.start()
+
+	run(app, reloader=False, host='localhost', port=8080, debug=True)

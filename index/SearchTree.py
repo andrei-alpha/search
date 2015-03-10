@@ -1,5 +1,6 @@
 import sys
 import random
+import time
 import re
 
 from itertools import groupby
@@ -60,17 +61,18 @@ class SearchTree:
 
     def get(self, prefix):
         self.resultCount = 0
-        results = self.__get(self.root, prefix, (prefix, 15, 50, 50))
+        endRegex = re.compile('\.|\?|\!')
+        results = self.__get(self.root, prefix, (prefix, 15, 50, 50, endRegex))
         if len(results) == 0:
             return ["not found"]
         return map(lambda (docRef, text): (self.entriesName[docRef], text), results)
 
     def suggest(self, prefix):
-        results = self.__get(self.root, prefix, (prefix, 99999, 0, 10))
-        pattern = '\*' + prefix + '\*'
-        results = map(lambda (_, text): re.sub(r'%s[^a-zA-Z0-9]+' % pattern, '_', text), results)
-        results = map(lambda text: re.sub(r'%s' % pattern, '', text), results)
-        results = map(lambda text: (re.findall(r"[\w']+", text)[0].strip("'"), 1), results)
+        endRegex = re.compile('\s|\,|\.|\?|\!')
+        results = self.__get(self.root, prefix, (prefix, 1000, 0, 3, endRegex))
+
+        results = map(lambda (_, text): text[len(prefix) + 2:], results)
+        results = map(lambda text: (self.__getFirstWord(text), 1), results)
         results.sort()
 
         suggestions = []
@@ -78,39 +80,38 @@ class SearchTree:
             total = sum(int(count) for word, count in group)
             suggestions.append((total, word))
         suggestions.sort()
+
         return suggestions[-10:][::-1]
 
     def __get(self, node, pattern, args):
         if not pattern:
-            docs = map(lambda docRef: self.entries[docRef], node.docs)
-            return self.__buildResultList(zip(node.docs, docs, node.offsets), pattern, args)
+            return self.__buildResultList(zip(node.docs, node.offsets), pattern, args)
 
         if not pattern[0] in node.next:
-            docs = map(lambda docRef: self.entries[docRef], node.docs)
-            entries = filter(lambda (docRef, doc, offset): doc[offset:].startswith(pattern), zip(node.docs, docs, node.offsets))
+            entries = filter(lambda (docRef, offset): self.entries[docRef][offset:].startswith(pattern), zip(node.docs, node.offsets))
             return self.__buildResultList(entries, pattern, args)
         return self.__get(node.next[pattern[0]], pattern[1:], args)
 
     def __buildResultList(self, entries, pattern, args):
-        (_, maxres, _, _) = args
+        (_, maxres, _, _, _) = args
         self.resultCount = len(entries)
         entries = entries if len(entries) < maxres else random.sample(entries, maxres)
-        return map(lambda (docRef, doc, offset): (docRef, self.__getContext(doc, offset, pattern, args)), entries)
+        return map(lambda (docRef, offset): (docRef, self.__getContext(docRef, offset, pattern, args)), entries)
 
     def __docFromRef(self, ref):
         document = self.entries[ref[0]][ref[1]:]
         return document
 
-    def __getContext(self, doc, offset, pattern, args):
-        (prefix, _, extraBefore, extraAfter) = args
-        before = self.__firstSplit(doc[:(offset-len(prefix)+len(pattern))][::-1], extraBefore)[::-1] if extraBefore else ''
-        after  = self.__firstSplit(doc[(offset+len(pattern)):], extraAfter) if extraAfter else ''
+    def __getContext(self, docRef, offset, pattern, args):
+        doc = self.entries[docRef]
+        (prefix, _, extraBefore, extraAfter, endRegex) = args
+        before = self.__firstSplit(doc[:(offset-len(prefix)+len(pattern))][::-1], extraBefore, endRegex)[::-1] if extraBefore else ''
+        after  = self.__firstSplit(doc[(offset+len(pattern)):], extraAfter, endRegex) if extraAfter else ''
         return before + "*" + prefix + "*" + after
 
-    def __firstSplit(self, str, offset):
-        end = re.compile('\.|\?|\!')
+    def __firstSplit(self, str, offset, endRegex):
         space = re.compile('\s')
-        match = end.search(str[offset:])
+        match = endRegex.search(str[offset:])
         match = match if match else space.search(str[offset:])
         index = match.start() if match else 0
         return str[:offset+index]
@@ -132,3 +133,11 @@ class SearchTree:
         for val in node.next:
             res.append( self.__examine(node.next[val]))
         return reduce(lambda x,y: [x[0] + y[0], x[1] + y[1], x[2] + y[2]], res)
+
+    def __getFirstWord(self, text):
+        text2 = text.lstrip("'\n.,?!: ")
+        space = ' ' if len(text2) < len(text) else ''
+        for i in xrange(0, len(text2)):
+            if not text2[i].isalnum():
+                return space + text2[:i]
+        return space + text2

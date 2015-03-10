@@ -8,13 +8,16 @@ function query(input) {
 	if (input.length == 0) {
 		$('#results').html('')
 		$('#resultsStats').html('')
+		$('#autocomplete').val('')
 		return;
 	}
+	var start = new Date().getTime();
 	$.ajax({
 	    url: "/backend/query",
         data: { "query": input, },
         type: "post",
 	      success: function(data){
+	      	console.log("(Results after " + (new Date().getTime() - start) + " msec)")
             processData(JSON.parse(data))
         },
     });
