@@ -20,9 +20,9 @@ class SearchIndex:
 		f = open(path)
 		self.index(f.read(), name)
 
-	def search(self, query):
+	def search(self, query, fromResults, lenResults):
 		start = time.time()
-		result = self.tree.get(query)
+		result = self.tree.get(query, fromResults, lenResults)
 		latency = "{0:.2f}".format((time.time() - start) * 1000)
 		print 'About', self.tree.resultsCount(), 'results (' + latency, 'milisec)'
 		return {"results": result, "count": self.tree.resultsCount(), "latency": latency}

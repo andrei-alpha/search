@@ -59,17 +59,17 @@ class SearchTree:
             node.next[str[0]] = SearchNode()
         self.__put(node.next[str[0]], str[1:], offset + 1, docRef, depth + 1)
 
-    def get(self, prefix):
+    def get(self, prefix, fromResults, lenResults):
         self.resultCount = 0
         endRegex = re.compile('\.|\?|\!')
-        results = self.__get(self.root, prefix, (prefix, 15, 50, 50, endRegex))
+        results = self.__get(self.root, prefix, (prefix, fromResults, lenResults, 50, 50, endRegex))
         if len(results) == 0:
             return ["not found"]
         return map(lambda (docRef, text): (self.entriesName[docRef], text), results)
 
     def suggest(self, prefix):
         endRegex = re.compile('\s|\,|\.|\?|\!')
-        results = self.__get(self.root, prefix, (prefix, 1000, 0, 3, endRegex))
+        results = self.__get(self.root, prefix, (prefix, -1, 1000, 0, 3, endRegex))
 
         results = map(lambda (_, text): text[len(prefix) + 2:], results)
         results = map(lambda text: (self.__getFirstWord(text), 1), results)
@@ -83,6 +83,7 @@ class SearchTree:
 
         return suggestions[-10:][::-1]
 
+    # Args represent prefix, fromResults, lenResults, contextBefore, contextAfter, regexSplit
     def __get(self, node, pattern, args):
         if not pattern:
             return self.__buildResultList(zip(node.docs, node.offsets), pattern, args)
@@ -93,9 +94,14 @@ class SearchTree:
         return self.__get(node.next[pattern[0]], pattern[1:], args)
 
     def __buildResultList(self, entries, pattern, args):
-        (_, maxres, _, _, _) = args
+        (_, fromRes, lenRes, _, _, _) = args
         self.resultCount = len(entries)
-        entries = entries if len(entries) < maxres else random.sample(entries, maxres)
+        
+        if len(entries) > lenRes:
+            if fromRes == -1:
+                entries = random.sample(entries, lenRes)
+            else:
+                entries = entries[fromRes:][:lenRes]
         return map(lambda (docRef, offset): (docRef, self.__getContext(docRef, offset, pattern, args)), entries)
 
     def __docFromRef(self, ref):
@@ -104,7 +110,7 @@ class SearchTree:
 
     def __getContext(self, docRef, offset, pattern, args):
         doc = self.entries[docRef]
-        (prefix, _, extraBefore, extraAfter, endRegex) = args
+        (prefix, _, _, extraBefore, extraAfter, endRegex) = args
         before = self.__firstSplit(doc[:(offset-len(prefix)+len(pattern))][::-1], extraBefore, endRegex)[::-1] if extraBefore else ''
         after  = self.__firstSplit(doc[(offset+len(pattern)):], extraAfter, endRegex) if extraAfter else ''
         return before + "*" + prefix + "*" + after

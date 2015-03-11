@@ -46,6 +46,14 @@ html, body {
     float: right;
 }
 
+#resultsPages {
+    color: #808080;
+    margin-top: -25px;
+    margin-right: 50px;
+    float: left;
+}
+
+
 .input {
     width: 100%;
     margin: -0.0625em 0px 0px;
@@ -79,6 +87,23 @@ html, body {
     padding: 6px 50px;
     min-height: 1.2em !important;
     font: 16px arial,sans-serif;
+}
+
+.fl {
+    text-decoration: none;
+    color: #1a0dab;
+    cursor: pointer;
+    padding: 2px;
+}
+
+.flx {
+    color:black; 
+    font-weight:bold;
+    padding: 3px;
+}
+
+.fl:hover { 
+    text-decoration: underline;
 }
 
 .result-name {

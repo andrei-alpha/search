@@ -14,7 +14,10 @@ def index():
 @app.route('/backend/query', method='POST')
 def query():
 	query = request.forms.get('query')
-	results = search.search(query)
+	fromResults = int(request.forms.get('from'))
+	lenResults = int(request.forms.get('count'))
+
+	results = search.search(query, fromResults, lenResults)
 	results['suggestions'] = search.suggest(query)
 	return json.dumps(results, ensure_ascii=False, encoding='utf8')
 
