@@ -30,7 +30,6 @@ def indexFiles(path):
 	for file in os.listdir(path):
 		if not os.path.isdir(path + '/' + file):
 			search.indexFile(path + '/' + file, file.replace("_", " ").title())
-			break
 
 if __name__ == "__main__":
 	search = SearchIndex()

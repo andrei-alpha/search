@@ -64,7 +64,7 @@ class SearchTree:
         endRegex = re.compile('\.|\?|\!')
         results = self.__get(self.root, prefix, (prefix, fromResults, lenResults, 50, 50, endRegex))
         if len(results) == 0:
-            return ["not found"]
+            return [["1.", "not found"]]
         return map(lambda (docRef, text): (self.entriesName[docRef], text), results)
 
     def suggest(self, prefix):
